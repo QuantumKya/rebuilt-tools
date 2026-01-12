@@ -1,0 +1,43 @@
+select { font-family: 'Google Sans Code'; margin-bottom: 2rem; }
+option { font-size: medium; }
+
+canvas {
+    margin-left: 1rem;
+}
+
+#flex-container {
+    display: flex;
+    flex-direction: row;
+}
+
+#input-container {
+    display: flex;
+    flex-direction: column;
+    margin-top: 3rem;
+    padding: 1.5rem;
+    max-width: 15rem;
+}
+
+#input-container div {
+    display: flex;
+    flex-direction: column;
+}
+
+#input-container > div > input, #input-container > div > select {
+    margin-bottom: 3rem;
+}
+
+#input-container > div > p {
+    position: absolute;
+    margin-top: 2.5rem;
+}
+#input-container > div > p:first-of-type {
+    align-self: flex-start;
+}
+#input-container > div > p:last-of-type {
+    align-self: flex-end;
+}
+
+#input-container .hidden-input {
+    display: none;
+}

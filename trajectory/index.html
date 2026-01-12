@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Trajectory Simulation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../main.css">
+    <link rel="stylesheet" href="main.css">
+
+    <script src="index.js" defer></script>
+</head>
+<body>
+
+    <div id="flex-container">
+
+        <div id="input-container">
+            <select name="unknown" id="unknown">
+                <option value="">Select One...</option>
+                <option value="delta">Distance from HUB</option>
+                <option value="v0">Launch Velocity</option>
+                <option value="theta">Launch Angle</option>
+                <option value="h">Launcher Height</option>
+            </select>
+
+            <div class="parameter-div">
+                <label for="delta">Distance from HUB</label>
+                <input type="range" name="delta" id="delta" min="10" max="150">
+                <p>10</p> <p>150</p>
+            </div>
+            <div class="parameter-div">
+                <label for="v0">Velocity of Launch</label>
+                <input type="range" name="v0" id="v0" min="0" max="40">
+                <p>0</p> <p>40</p>
+            </div>
+            <div class="parameter-div">
+                <label for="theta">Angle of Launch</label>
+                <input type="range" name="theta" id="theta" min="0" max="90">
+                <p>0</p> <p>90</p>
+            </div>
+            <div class="parameter-div">
+                <label for="h">Height of Launcher</label>
+                <input type="range" name="h" id="h" min="15" max="100">
+                <p>15</p> <p>100</p>
+            </div>
+
+            <button id="runbtn">Run Simulation</button>
+
+            <p><i>Hold Shift while dragging sliders to snap to multiples of 5. Hold Control for multiples of 10.</i></p>
+        </div>
+
+        <canvas></canvas>
+    </div>
+
+</body>
+</html>
