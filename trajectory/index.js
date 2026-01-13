@@ -1,15 +1,17 @@
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 600;
-canvas.height = 600;
 ctx.imageSmoothingEnabled = false;
+ctx.lineWidth = 2;
 
-const w = canvas.width;
-const h = canvas.height;
+const w = 200;
+const h = 150;
+canvas.width = w*4;
+canvas.height = h*4;
 
 let assetsLoaded = 0;
 let SHIFTING = false;
 let CTRLING = false;
+let ALTING = false;
 
 const inputState = {
     delta: NaN,
@@ -20,26 +22,33 @@ const inputState = {
 
 /*================================= Input Fields =================================*/
 
-document.querySelectorAll('input').forEach((inp, i) => {
-    inp.parentElement.classList.add('hidden-input');
+const inputStats = {
+    delta: { unit: 'ft', conversionFactor: 12, defaultVal: 4 },
+    v0: { unit: 'ft/s', conversionFactor: 12, defaultVal: 20 },
+    theta: { unit: '°', conversionFactor: Math.PI / 180, defaultVal: 45 },
+    h: { unit: 'in', conversionFactor: 1, defaultVal: 20 }
+};
 
-    inp.value = [36, 50, 45, 25].at(i);
-    inputState[inp.id] = inp.value * (inp.id === 'theta' ? 1 : 4);
+const inputs = document.querySelectorAll('input');
+inputs.forEach(inp => {
+    const id = inp.id;
+    const thisInput = inputStats[id];
+
+    inp.value = thisInput.defaultVal;
+    inputState[id] = Number(inp.value) * thisInput.conversionFactor;
 
     const label = inp.parentElement.querySelector('label');
     label.textContent += `: ${inp.value}`;
     
     inp.oninput = e => {
+        const tsInput = inputStats[e.target.id];
         let val = Number(e.target.value);
-        
-        if (CTRLING) val = Math.floor(val / 10) * 10;
-        else if (SHIFTING) val = Math.floor(val / 5) * 5;
 
         e.target.value = val;
         label.textContent = label.textContent.split(': ')[0] + `: ${val}`;
 
         const which = e.target.id;
-        inputState[which] = e.target.value * (which === 'theta' ? 1 : 4);
+        inputState[which] = val * tsInput.conversionFactor;
         draw(inputState);
     };
 });
@@ -48,17 +57,24 @@ const selector = document.querySelector('select');
 selector.value = '';
 selector.onchange = e => {
     const selected = e.target.value;
-    if (selected === '') return;
 
     document.querySelectorAll('.parameter-div').forEach(
-        div => div.classList.toggle('hidden-input', selected === div.querySelector('input').id)
+        div => div.classList.toggle('hidden-input', (selected === div.querySelector('input').id) || !selected)
     );
 }
+const unknown = () => selector.value;
 
-window.addEventListener('keydown', e => { if (e.key === 'Shift') SHIFTING = true; if (e.key === 'Control') CTRLING = true; });
-window.addEventListener('keyup', e => { if (e.key === 'Shift') SHIFTING = false; if (e.key === 'Control') CTRLING = false; });
+const changeSteps = (step) => {
+    inputs.forEach(inp => inp.step = step);
+}
 
-document.querySelector('button').onclick = () => checkInstance(inputState);
+window.addEventListener('keydown', e => { if (e.key === 'Shift') changeSteps(0.1); if (e.key === 'Control') changeSteps(0.01); if (e.key === 'Alt') changeSteps(0.001); });
+window.addEventListener('keyup', e => { if (e.key === 'Shift') changeSteps(1); if (e.key === 'Control') changeSteps(1); if (e.key === 'Alt') changeSteps(1); });
+
+document.querySelector('button').onclick = () => {
+    const searchee = unknown();
+    searchee ? findRange(searchee) : checkInstance(inputState, milliPerFrame);
+};
 
 /*================================= Constants =================================*/
 
@@ -66,30 +82,32 @@ const dozerImage = new Image();
 dozerImage.src = './dozer.png';
 dozerImage.onload = e => assetsLoaded++;
 dozerImage.onerror = e => window.location.reload();
-const dozerSize = 64;
+const dozerSize = 20;
 
-const hubWidth = 47 * 4;
-const hubHeight = 48 * 4;
-const hopperWidth = 41.7 * 4;
-const hopperHeight = 72 * 4;
+const hubWidth = 47;
+const hubHeight = 48;
+const hopperWidth = 41.7;
+const hopperHeight = 72;
 
-const hubLeft = canvas.width - hubWidth;
-const hubMid = canvas.width - hubWidth/2;
-const hubTop = canvas.height - hubHeight;
+const hubLeft = w - hubWidth;
+const hubMid = w - hubWidth/2;
+const hubTop = hubHeight;
 
-const hopperLeft = canvas.width - hopperWidth;
-const hopperMid = canvas.width - hopperWidth/2;
-const hopperTop = canvas.height - hopperHeight;
+const hopperLeft = w - hopperWidth;
+const hopperMid = w - hopperWidth/2;
+const hopperTop = hopperHeight;
+
+const WORLD_SCALE = 4; // 1 inch = 4 pixels
 
 
 /*================================= Algorithm =================================*/
 
-const unknown = () => document.querySelector('select').value;
 const precision = 2;
 
 const g = 386.0885827; // inches per second per second
 
-function checkInstance(stats) {
+const milliPerFrame = 20;
+function checkInstance(stats, msPer) {
     // Constants
     const startDelta = stats.delta;
     const startHeight = stats.h;
@@ -100,38 +118,51 @@ function checkInstance(stats) {
     const vy = launchVel * Math.sin(launchAngle);
 
     // Trajectory function
-    const y = (t) => (-g)*t*t + (vy)*t + (startHeight);
+    const y = (t) => (-g/2)*t*t + (vy)*t + (startHeight);
     
     let above = (startHeight > 72);
     let t = 0;
-    const interval = Math.pow(10, -precision);
     let yt = startHeight;
+    const interval = Math.pow(10, -precision);
     
+    const cx = (tm) => (hubLeft - startDelta) + vx*tm;
+
     // Drawing and calculation loop
     const yStorage = [startHeight];
-    while (!(above && yt <= 72)) {
+    const drawStep = () => {
+        if (yt < 0) return;
+        if (above && yt <= 72) return;
         if (!above && yt > 72) above = true;
         
-        const cx = (t) => (hubLeft - startDelta) + vx*t * 4;
-
+        
         draw(stats);
+
+        // MOVE AND SCALE
+        ctx.save();
+        ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
+        
         ctx.strokeStyle = 'red';
-        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.moveTo((hubLeft - startDelta), h - yStorage[0])
-        for (let i = 0; i < yStorage.length; i++) {
-            ctx.lineTo(cx(i*interval), h - yStorage[i] * 4);
+        ctx.moveTo(cx(0), yStorage[0]);
+        for (let i = 1; i < yStorage.length; i++) {
+            ctx.lineTo(cx(i * interval), yStorage[i]);
         }
         ctx.stroke();
-        drawBall(stats, cx(t), yt * 4);
         
-        t++;
-        yt = y(t*interval);
+        drawBall(stats, cx(t), yt);
+        ctx.restore();
+        
+        t += interval;
+        yt = y(t);
         yStorage.push(yt);
-    }
+
+        setTimeout(drawStep, msPer);
+    };
+
+    drawStep();
 
     const checkValue = t*vx - startDelta;
-    return (checkValue > 0 && checkValue < hubWidth);
+    return (checkValue > 0 && checkValue < hopperWidth / 4);
 }
 
 function findRange(unknown) {
@@ -141,8 +172,8 @@ function findRange(unknown) {
     const inputMin = inputRange.min;
     const inputMax = inputRange.max;
 
-    const precision = 2;
-    const interval = Math.pow(10, -precision);
+    const prec = 2;
+    const interval = Math.pow(10, -prec);
 
     let outMin = inputMin;
     let outMax = inputMax;
@@ -168,35 +199,40 @@ const drawBall = (stats, x, y) => {
     // REPLACE WITH IMAGE DRAWING LATER
     ctx.fillStyle = '#f4f42d';
     ctx.beginPath();
-    ctx.arc(x, y, 15, 0, 2*Math.PI);
+    ctx.arc(x, y, 3, 0, 2*Math.PI);
     ctx.fill();
 }
 
 const draw = (stats) => {
     if (assetsLoaded < 1) return;
+    ctx.save();
+
     ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, w, h);
-
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    
+    
+    // MOVE AND SCALE
+    ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
     console.log(stats);
+    const sH = stats.h;
 
+    // Draw the hub and hopper =========================================================
     const dozerLeft = hubLeft - stats.delta - dozerSize/2;
-
-    ctx.drawImage(dozerImage, dozerLeft, h - stats.h, 64, 64);
-
     ctx.fillStyle = 'gray';
     ctx.beginPath();
-    ctx.moveTo(dozerLeft, h);
-    ctx.lineTo(dozerLeft, h - stats.h + dozerSize);
-    ctx.lineTo(dozerLeft + dozerSize, h - stats.h + dozerSize);
-    ctx.lineTo(dozerLeft + dozerSize, h);
-    ctx.lineTo(dozerLeft, h);
+    ctx.moveTo(dozerLeft, 0);
+    ctx.lineTo(dozerLeft, sH - dozerSize);
+    ctx.lineTo(dozerLeft + dozerSize, sH - dozerSize);
+    ctx.lineTo(dozerLeft + dozerSize, 0);
+    ctx.lineTo(dozerLeft, 0);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(w, h);
+    ctx.moveTo(w, 0);
     ctx.lineTo(w, hubTop);
     ctx.lineTo(hubLeft, hubTop);
-    ctx.lineTo(hubLeft, h);
+    ctx.lineTo(hubLeft, 0);
     ctx.fill();
     
     ctx.strokeStyle = '#dedede';
@@ -208,10 +244,54 @@ const draw = (stats) => {
     ctx.lineTo(hubMid + hopperWidth/4, hubTop);
     ctx.lineTo(hubMid, hubTop);
     ctx.stroke();
+
+    // Draw the angle and the velocity vector =========================================================
+
+    const velocityLength = stats.v0 * (5 / document.querySelector('input#v0').max);
+
+    ctx.strokeStyle = '#ffffff99';
+    ctx.beginPath();
+    ctx.moveTo(dozerLeft + dozerSize/2, sH);
+    for (let i = 0; i < velocityLength*Math.cos(stats.theta)/2; i++) {
+        const x = dozerLeft + dozerSize/2 + i*2;
+        const y = sH;
+        i % 2 === 0 ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = '#00ff00';
+    ctx.beginPath();
+    ctx.moveTo(dozerLeft + dozerSize/2, sH);
+    ctx.lineTo(
+        dozerLeft + dozerSize/2 + (velocityLength-0.25) * Math.cos(stats.theta),
+        sH + (velocityLength-0.25) * Math.sin(stats.theta)
+    );
+    const arrowHeadSize = 7.5;
+    ctx.lineTo(
+        dozerLeft + dozerSize/2 + velocityLength * Math.cos(stats.theta) + arrowHeadSize*Math.cos(stats.theta - Math.PI*3/4),
+        sH + velocityLength * Math.sin(stats.theta) + arrowHeadSize*Math.sin(stats.theta - Math.PI*3/4)
+    );
+    ctx.moveTo(
+        dozerLeft + dozerSize/2 + velocityLength * Math.cos(stats.theta),
+        sH + velocityLength * Math.sin(stats.theta)
+    );
+    ctx.lineTo(
+        dozerLeft + dozerSize/2 + velocityLength * Math.cos(stats.theta) + arrowHeadSize*Math.cos(stats.theta + Math.PI*3/4),
+        sH + velocityLength * Math.sin(stats.theta) + arrowHeadSize*Math.sin(stats.theta + Math.PI*3/4)
+    )
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Draw the dozer image upright in pixel coordinates (avoid transform flip)
+    const px = dozerLeft * WORLD_SCALE;
+    const psize = dozerSize * WORLD_SCALE;
+    const pyTop = canvas.height - (sH * WORLD_SCALE); // top-left y for image so bottom sits at sH
+    ctx.drawImage(dozerImage, px, pyTop, psize, psize);
 }
 
 
 ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-setTimeout(() => draw({ delta: 40 * 4, h: 20 * 4 }), 2000);
+setTimeout(() => draw(inputState), 2000);

@@ -28,29 +28,29 @@
             </select>
 
             <div class="parameter-div">
-                <label for="delta">Distance from HUB</label>
-                <input type="range" name="delta" id="delta" min="10" max="150">
-                <p>10</p> <p>150</p>
+                <label for="delta">Distance from HUB (ft)</label>
+                <input type="range" name="delta" id="delta" min="1" max="12">
+                <p>1</p> <p>12</p>
             </div>
             <div class="parameter-div">
-                <label for="v0">Velocity of Launch</label>
-                <input type="range" name="v0" id="v0" min="0" max="40">
-                <p>0</p> <p>40</p>
+                <label for="v0">Velocity of Launch (ft/s)</label>
+                <input type="range" name="v0" id="v0" min="15" max="30">
+                <p>15</p> <p>30</p>
             </div>
             <div class="parameter-div">
-                <label for="theta">Angle of Launch</label>
+                <label for="theta">Angle of Launch (º)</label>
                 <input type="range" name="theta" id="theta" min="0" max="90">
                 <p>0</p> <p>90</p>
             </div>
             <div class="parameter-div">
-                <label for="h">Height of Launcher</label>
+                <label for="h">Height of Launcher (in)</label>
                 <input type="range" name="h" id="h" min="15" max="100">
                 <p>15</p> <p>100</p>
             </div>
 
             <button id="runbtn">Run Simulation</button>
 
-            <p><i>Hold Shift while dragging sliders to snap to multiples of 5. Hold Control for multiples of 10.</i></p>
+            <p><i>Hold Shift and Ctrl for more precision on sliders.</i></p>
         </div>
 
         <canvas></canvas>

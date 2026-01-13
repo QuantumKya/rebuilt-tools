@@ -3,6 +3,8 @@ option { font-size: medium; }
 
 canvas {
     margin-left: 1rem;
+    width: 800px;
+    height: 600px;
 }
 
 #flex-container {
@@ -15,7 +17,7 @@ canvas {
     flex-direction: column;
     margin-top: 3rem;
     padding: 1.5rem;
-    max-width: 15rem;
+    max-width: 20rem;
 }
 
 #input-container div {
