@@ -71,9 +71,10 @@ const changeSteps = (step) => {
 window.addEventListener('keydown', e => { if (e.key === 'Shift') changeSteps(0.1); if (e.key === 'Control') changeSteps(0.01); if (e.key === 'Alt') changeSteps(0.001); });
 window.addEventListener('keyup', e => { if (e.key === 'Shift') changeSteps(1); if (e.key === 'Control') changeSteps(1); if (e.key === 'Alt') changeSteps(1); });
 
-document.querySelector('button').onclick = () => {
+document.querySelector('button').onclick = async () => {
     const searchee = unknown();
-    searchee ? findRange(searchee) : checkInstance(inputState, milliPerFrame);
+    if (searchee === '') checkInstance(inputState, milliPerFrame);
+    else await findRange(searchee);
 };
 
 /*================================= Constants =================================*/
@@ -108,87 +109,129 @@ const g = 386.0885827; // inches per second per second
 
 const milliPerFrame = 20;
 function checkInstance(stats, msPer) {
-    // Constants
-    const startDelta = stats.delta;
-    const startHeight = stats.h;
-    const launchAngle = stats.theta;
-    const launchVel = stats.v0;
+    return new Promise((resolve) => {
+        // Constants
+        const startDelta = stats.delta;
+        const startHeight = stats.h;
+        const launchAngle = stats.theta;
+        const launchVel = stats.v0;
 
-    const vx = launchVel * Math.cos(launchAngle);
-    const vy = launchVel * Math.sin(launchAngle);
+        const vx = launchVel * Math.cos(launchAngle);
+        const vy = launchVel * Math.sin(launchAngle);
 
-    // Trajectory function
-    const y = (t) => (-g/2)*t*t + (vy)*t + (startHeight);
-    
-    let above = (startHeight > 72);
-    let t = 0;
-    let yt = startHeight;
-    const interval = Math.pow(10, -precision);
-    
-    const cx = (tm) => (hubLeft - startDelta) + vx*tm;
-
-    // Drawing and calculation loop
-    const yStorage = [startHeight];
-    const drawStep = () => {
-        if (yt < 0) return;
-        if (above && yt <= 72) return;
-        if (!above && yt > 72) above = true;
+        // Trajectory function
+        const y = (t) => (-g/2)*t*t + (vy)*t + (startHeight);
         
+        let above = (startHeight > 72);
+        let t = 0;
+        let yt = startHeight;
+        const interval = Math.pow(10, -precision);
         
-        draw(stats);
+        const cx = (tm) => (hubLeft - startDelta) + vx*tm;
 
-        // MOVE AND SCALE
-        ctx.save();
-        ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
-        
-        ctx.strokeStyle = 'red';
-        ctx.beginPath();
-        ctx.moveTo(cx(0), yStorage[0]);
-        for (let i = 1; i < yStorage.length; i++) {
-            ctx.lineTo(cx(i * interval), yStorage[i]);
-        }
-        ctx.stroke();
-        
-        drawBall(stats, cx(t), yt);
-        ctx.restore();
-        
-        t += interval;
-        yt = y(t);
-        yStorage.push(yt);
+        const drawParabola = (yvals) => {
+            draw(stats);
 
-        setTimeout(drawStep, msPer);
-    };
+            // MOVE AND SCALE
+            ctx.save();
+            ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
+            
+            ctx.strokeStyle = 'red';
+            ctx.beginPath();
+            ctx.moveTo(cx(0), yvals[0]);
+            for (let i = 1; i < yvals.length; i++) {
+                ctx.lineTo(cx(i * interval), yvals[i]);
+            }
+            ctx.stroke();
+            
+            drawBall(stats, cx(t), yvals.at(-1));
+            ctx.restore();
+        };
 
-    drawStep();
+        // Drawing and calculation loop
+        const yStorage = [startHeight];
+        const drawStep = () => {
+            if (!above && cx(t) > hopperLeft) {
+                resolve(false);
+                drawParabola(yStorage);
+                return;
+            }
+            if ((yt < 0) || (above && yt <= 72)) {
+                const checkValue = t*vx - startDelta;
+                resolve(checkValue > 0 && checkValue < hopperWidth);
+                drawParabola(yStorage);
+                return;
+            }
+            if (!above && yt > 72) above = true;
 
-    const checkValue = t*vx - startDelta;
-    return (checkValue > 0 && checkValue < hopperWidth / 4);
+            if (msPer > 0) drawParabola(yStorage);
+            
+            t += interval;
+            yt = y(t);
+            yStorage.push(yt);
+
+            if (msPer > 0) setTimeout(drawStep, msPer);
+            else requestAnimationFrame(drawStep);
+        };
+
+        drawStep();
+    });
 }
 
-function findRange(unknown) {
+async function findRange(unknown) {
     if (unknown === '') return;
 
     const inputRange = document.querySelector(`input#${unknown}`);
-    const inputMin = inputRange.min;
-    const inputMax = inputRange.max;
-
-    const prec = 2;
-    const interval = Math.pow(10, -prec);
+    const inputMin = parseFloat(inputRange.min);
+    const inputMax = parseFloat(inputRange.max);
 
     let outMin = inputMin;
     let outMax = inputMax;
     
-    for (let test = inputMin; test <= inputMax; test += interval) {
-        const state = Object.entries(inputState).map(([ key, value ]) => [ key, key === unknown ? test : value ]);
-        const résultat = checkInstance(state);
+    for (let prec = 0; prec < 40; prec++) {
+        const interval = ([5, 1].at(prec % 2)) * Math.pow(10, -Math.floor(prec/2)+1);
+        console.log(`Precision ${prec}, interval: ${interval}`);
+        console.log(`Range: ${outMin} to ${outMax}`);
+        
+        // Stop if range is too small
+        //if (outMax - outMin < interval) break;
 
-        if (!résultat) {
-            outMin = Math.min(outMin, test);
-            outMax = Math.max(outMax, test);
+        const successes = [], failures = [];
+        
+        for (let test = outMin; test <= outMax; test += interval) {
+            const state = Object.fromEntries(
+                Object.entries(inputState).map(([ key, value ]) => [ key, key === unknown ? (test * inputStats[unknown].conversionFactor) : value ])
+            );
+            const résultat = await checkInstance(state, -1);
+
+            if (résultat) successes.push(test);
+            else failures.push(test);
         }
+
+        if (successes.length === 0 || failures.length === 0) continue;
+
+        const oldMax = outMax, oldMin = outMin;
+
+        const minSuccess = Math.min(...successes);
+        const maxSuccess = Math.max(...successes);
+
+        const failuresBelowMin = failures.filter(f => f < minSuccess);
+        if (failuresBelowMin.length > 0) {
+            outMin = Math.max(outMin, Math.max(...failuresBelowMin));
+        }
+
+        const failuresAboveMax = failures.filter(f => f > maxSuccess);
+        if (failuresAboveMax.length > 0) {
+            outMax = Math.min(outMax, Math.min(...failuresAboveMax));
+        }
+
+        const improvement = Math.sqrt(Math.pow(oldMax - outMax, 2) + Math.pow(oldMin - outMin, 2));
+        if (improvement < 0.15 && improvement) break;
+        
     }
 
-    console.log(outMin, outMax);
+    console.log(`Final range: ${outMin} to ${outMax}`);
+    return { min: outMin, max: outMax };
 }
 
 /*================================= Drawing =================================*/
@@ -214,7 +257,6 @@ const draw = (stats) => {
     
     // MOVE AND SCALE
     ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
-    console.log(stats);
     const sH = stats.h;
 
     // Draw the hub and hopper =========================================================
