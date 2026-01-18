@@ -19,12 +19,15 @@
     <div id="flex-container">
 
         <div id="input-container">
+            <h1>Fuel Trajectory</h1>
+            
             <select name="unknown" id="unknown">
                 <option value="">Select One...</option>
                 <option value="delta">Distance from HUB</option>
                 <option value="v0">Launch Velocity</option>
                 <option value="theta">Launch Angle</option>
                 <option value="h">Launcher Height</option>
+                <option value="spin">Spin Velocity</option>
             </select>
 
             <div class="parameter-div">
@@ -35,7 +38,7 @@
             <div class="parameter-div">
                 <label for="v0">Velocity of Launch (ft/s)</label>
                 <input type="range" name="v0" id="v0" min="17.5" max="27.5">
-                <p>15</p> <p>30</p>
+                <p>17.5</p> <p>27.5</p>
             </div>
             <div class="parameter-div">
                 <label for="theta">Angle of Launch (º)</label>
@@ -47,13 +50,84 @@
                 <input type="range" name="h" id="h" min="15" max="100">
                 <p>15</p> <p>100</p>
             </div>
+            <div class="parameter-div">
+                <label for="spin">Velocity of Spin (100rpm)</label>
+                <input type="range" name="spin" id="spin" min="-50" max="50">
+                <p>-50</p> <p>50</p>
+            </div>
 
-            <button id="runbtn">Run Simulation</button>
+            <div id="runbtncarrier">
+                <button class="runbtn">Run Sim. 1</button>
+                <button class="runbtn">Run Sim. 2</button>
+                <button class="runbtn">Run Sim. 3</button>
+            </div>
 
-            <p><i>Hold Shift and Ctrl for more precision on sliders.</i></p>
+            <p style="margin-bottom: 0.5rem;"><i>Hold Shift and Ctrl for more precision on sliders.</i></p>
+            <p style="margin-top: 0;"><i>Positive spin indicates topspin, and negative backspin.</i></p>
         </div>
 
-        <canvas></canvas>
+        <div>
+            <canvas></canvas>
+
+            <div id="displayoptionholder">
+                <div style="display: flex; flex-direction: row; gap: 1.5rem; justify-content: space-between;">
+                    <div class="optionset">
+                        <div>
+                            <input type="checkbox" name="showVelocity" id="showVelocity">
+                            <label for="showVelocity">Show Velocity</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="showKJForce" id="showKJForce">
+                            <label for="showKJForce">Show Kutta-Joukowski (Magnus Effect) Force</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="showDragForce" id="showDragForce">
+                            <label for="showDragForce">Show Drag Force</label>
+                        </div>
+                    </div>
+                    
+                    <div class="optionset">
+                        <div>
+                            <label for="displayPrecision">Display Precision <small>(digits of display)</small></label>
+                            <input type="number" name="displayPrecision" id="displayPrecision" min="0" max="8">
+                        </div>
+                        <div>
+                            <label for="calculationPrecision">Calculation Precision <small>(step size)</small></label>
+                            <input type="number" name="calculationPrecision" id="calculationPrecision" min="2" max="12">
+                        </div>
+                        <div>
+                            <label for="stepTime">Step Time (ms)</label>
+                            <input type="number" name="stepTime" id="stepTime" min="0" max="1000" step="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p style="font-size: 85%; margin: 0; margin-top: 0.5em;"><i>Drag and Magnus forces are exaggerated for visibility;</i></p>
+                    <p style="font-size: 85%; margin: 0;"><i>They are each scaled by a relative factor of 3.</i></p>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="resultspanel">
+
+            <h2 style="margin-top: 0;">Results</h2>
+
+            <h3>Simulation 1</h3>
+            <div class="resulttext">
+                <p>Adjust parameters and run a simulation to see results here.</p>
+            </div>
+            <h3>Simulation 2</h3>
+            <div class="resulttext">
+                <p>Adjust parameters and run a simulation to see results here.</p>
+            </div>
+            <h3>Simulation 3</h3>
+            <div class="resulttext">
+                <p>Adjust parameters and run a simulation to see results here.</p>
+            </div>
+
+        </div>
     </div>
 
 </body>

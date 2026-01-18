@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="74.074 271.104 361.695 173.508" width="361.695px" height="173.508px">
+  <path style="stroke: rgb(0, 0, 0); fill: rgb(0, 65, 234);" d="M 338.339 439.979 L 335.669 295.128 C 341.42 362.858 369.509 411.132 435.769 439.94 L 338.339 439.979 Z" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)"/>
+  <rect x="74.074" y="271.104" width="229.563" height="132.799" style="stroke: rgb(0, 0, 0); fill: rgb(0, 66, 239);" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)"/>
+  <polygon style="stroke: rgb(0, 0, 0); fill: rgb(139, 139, 139);" points="336.336 369.404 285.233 362.995 284.211 346.515 336.336 346.513" transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)"/>
+  <g transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, -12.01203441619873)">
+    <title>Wheel 1</title>
+    <ellipse style="stroke: rgb(0, 0, 0); fill: rgb(88, 88, 88);" cx="120.787" cy="427.261" rx="29.363" ry="29.363"/>
+    <ellipse style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);" cx="121.12" cy="426.926" rx="20.354" ry="20.354"/>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 67.6915512084961, -12.01203441619873)">
+    <title>Wheel 2</title>
+    <ellipse style="stroke: rgb(0, 0, 0); fill: rgb(88, 88, 88);" cx="120.787" cy="427.261" rx="29.363" ry="29.363"/>
+    <ellipse style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);" cx="121.12" cy="426.926" rx="20.354" ry="20.354"/>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 136.5675048828125, -12.01203441619873)">
+    <title>Wheel 3</title>
+    <ellipse style="stroke: rgb(0, 0, 0); fill: rgb(88, 88, 88);" cx="120.787" cy="427.261" rx="29.363" ry="29.363"/>
+    <ellipse style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);" cx="121.12" cy="426.926" rx="20.354" ry="20.354"/>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, -2.842170943040401e-14, 0)">
+    <title>Eyes</title>
+    <ellipse style="stroke: rgb(0, 0, 0); fill: rgb(255, 255, 255);" cx="299.3" cy="300.801" rx="22.356" ry="22.356"/>
+    <ellipse style="stroke: rgb(0, 0, 0);" cx="304.822" cy="296.46" rx="15.232" ry="16.812"/>
+  </g>
+</svg>
