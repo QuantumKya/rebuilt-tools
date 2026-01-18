@@ -509,7 +509,7 @@ const draw = (stats) => {
         
         const kjForce = sim.pStorage.at(-1).kjForce;
         const dragForce = sim.pStorage.at(-1).dragForce;
-        const kjDirection = Math.atan2(kjForce.y, kjForce.x) + (sim.spin >= 0 ? Math.PI : 0);
+        const kjDirection = Math.atan2(kjForce.y, kjForce.x);
         const kjMag = Math.hypot(kjForce.x, kjForce.y);
         const dragDirection = Math.atan2(dragForce.y, dragForce.x);
         const dragMag = Math.hypot(dragForce.x, dragForce.y);
