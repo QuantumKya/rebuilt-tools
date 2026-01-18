@@ -37,7 +37,7 @@ const inputStats = {
     v0: { unit: 'ft/s', conversionFactor: 12, defaultVal: 20 },
     theta: { unit: '°', conversionFactor: Math.PI / 180, defaultVal: 45 },
     h: { unit: 'in', conversionFactor: 1, defaultVal: 20 },
-    spin: { unit: 'rpm', conversionFactor: 100*2*Math.PI/60, defaultVal: 0 },
+    spin: { unit: 'rpm', conversionFactor: 1000 * 2*Math.PI/60, defaultVal: 0 },
 };
 
 const valInputs = [...document.querySelectorAll('.parameter-div')].map(div => div.querySelector('input'));
@@ -83,7 +83,7 @@ selector.onchange = e => {
     const selected = e.target.value;
 
     document.querySelectorAll('.parameter-div').forEach(
-        div => div.classList.toggle('hidden-input', (selected === div.querySelector('input').id) || !selected)
+        div => div.classList.toggle('hidden-input', (selected === div.querySelector('input').id) && selected)
     );
 }
 const unknown = () => selector.value;
@@ -94,6 +94,7 @@ const changeSteps = (step) => {
 
 window.addEventListener('keydown', e => { if (e.key === 'Shift') changeSteps(0.1); else if (e.key === 'Control') changeSteps(0.01); else if (e.key === 'Alt') changeSteps(0.001); else return; e.preventDefault(); });
 window.addEventListener('keyup', e => { if (e.key === 'Shift') changeSteps(1); else if (e.key === 'Control') changeSteps(1); else if (e.key === 'Alt') changeSteps(1); else return; e.preventDefault(); });
+document.addEventListener('mouseup', e => changeSteps(1));
 
 simColors = ['#ff0000', '#00ff00', '#0000ff'];
 document.querySelectorAll('button').forEach((btn, i) => btn.onclick = async () => {
@@ -142,6 +143,7 @@ const add = (vec1, vec2) => ({ x: vec1.x + vec2.x, y: vec1.y + vec2.y });
 const mult = (vec, scalar) => ({ x: vec.x * scalar, y: vec.y * scalar });
 
 const sims = simColors.map(a=>null);
+//const simGifs = simColors.map(a=>[]);
 class SimulationData {
     constructor(delta, h, theta, v0, spin, color) {
         this.delta = delta;
@@ -188,10 +190,10 @@ class SimulationData {
 
     integrateStep() {
         const omega = this.spin; // rad/s
-        const fluidDensity = 0.0000434;
+        const fluidDensity = 0.0000434; // lbs/in3
         const peopleScreamingAtTheBall = 100;
-        const freeStreamVel = 3.93701 + 0.0000000001*peopleScreamingAtTheBall; // 0.1 m/s in in/s
-        const kjForce = (2/3 * Math.PI) * fluidDensity * freeStreamVel * omega * Math.pow(fuelRadius, 3);
+        const freeStreamVel = 3.93701 + 0.0000000000000000000000000000001*peopleScreamingAtTheBall;
+        const kjForce = (8/3)*Math.PI * fluidDensity * freeStreamVel * omega * Math.pow(fuelRadius, 3);
 
         const dragCoefficient = 0.47; // Sphere drag coefficient ???????????????????????????????????????????????????????????????????????
         const crossSection = Math.pow(fuelRadius, 2) * Math.PI;
@@ -521,7 +523,7 @@ const draw = (stats) => {
             pos.x + sim.dozerLeft, pos.y,
             dragDirection,
             dragMag * vectorSclFactor * 3,
-            '#ff0000'
+            '#ff5500'   
         );
     });
 
