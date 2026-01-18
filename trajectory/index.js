@@ -108,9 +108,11 @@ document.querySelectorAll('button').forEach((btn, i) => btn.onclick = async () =
 
 const images = {
     dozer: new Image(),
+    hub: new Image(),
 };
 const imgPaths = {
     dozer: 'bozer.svg',
+    hub: 'hub.svg',
 };
 const dozerSize = 20;
 
@@ -429,6 +431,11 @@ const draw = (stats) => {
 
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const hubDrawW = (hubWidth + 7.5) * WORLD_SCALE;
+    const hubDrawH = (hopperHeight + 48) * WORLD_SCALE;
+
+    ctx.drawImage(images.hub, canvas.width - hubDrawW, canvas.height - hubDrawH);
     
     
     
@@ -438,34 +445,6 @@ const draw = (stats) => {
 
     // Draw the hub and hopper =========================================================
     const dozerLeft = hubLeft - stats.delta - dozerSize/2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    ctx.fillStyle = 'gray';
-    ctx.beginPath();
-    ctx.moveTo(dozerLeft, 0);
-    ctx.lineTo(dozerLeft, sH - dozerSize);
-    ctx.lineTo(dozerLeft + dozerSize, sH - dozerSize);
-    ctx.lineTo(dozerLeft + dozerSize, 0);
-    ctx.lineTo(dozerLeft, 0);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(w, 0);
-    ctx.lineTo(w, hubTop);
-    ctx.lineTo(hubLeft, hubTop);
-    ctx.lineTo(hubLeft, 0);
-    ctx.fill();
-    
-    ctx.strokeStyle = '#dedede';
-    ctx.beginPath();
-    ctx.moveTo(hubMid, hubTop);
-    ctx.lineTo(hubMid - hopperWidth/4, hubTop);
-    ctx.lineTo(hubMid - hopperWidth/2, hopperTop);
-    ctx.lineTo(hubMid + hopperWidth/2, hopperTop);
-    ctx.lineTo(hubMid + hopperWidth/4, hubTop);
-    ctx.lineTo(hubMid, hubTop);
-    ctx.stroke();
 
     // Draw the angle and the velocity vector =========================================================
 
