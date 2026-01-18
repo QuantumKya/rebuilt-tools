@@ -145,7 +145,7 @@ const add = (vec1, vec2) => ({ x: vec1.x + vec2.x, y: vec1.y + vec2.y });
 const mult = (vec, scalar) => ({ x: vec.x * scalar, y: vec.y * scalar });
 
 const sims = simColors.map(a=>null);
-//const simGifs = simColors.map(a=>[]);
+const simGifs = simColors.map(a=>[]);
 class SimulationData {
     constructor(delta, h, theta, v0, spin, color) {
         this.delta = delta;
@@ -170,6 +170,9 @@ class SimulationData {
         this.success = false;
 
         this.dozerLeft = hubLeft - this.delta;
+
+        this.canvas = document.createElement('canvas');
+        this.ctx = this.canvas.getContext('2d');
     }
 
     set drawingSpeed(msPer) {
@@ -188,6 +191,11 @@ class SimulationData {
         this.pStorage = [{ t: 0, position: { x: 0, y: this.h }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } }];
 
         this.running = true;
+
+        this.canvas.width = canvas.width;
+        this.canvas.height = canvas.height;
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.lineWidth = 2;
     }
 
     integrateStep() {
@@ -238,7 +246,37 @@ class SimulationData {
         }
         ctx.stroke();
         ctx.restore();
-    };
+    }
+    
+    drawVectors(context) {
+        const pos = this.position;
+        const vel = this.velocity;
+        if (optionValues['showVelocity'] && Math.hypot(vel.x, vel.y) > 0) drawArrow(context,
+            pos.x + this.dozerLeft, pos.y,
+            Math.atan2(vel.y, vel.x),
+            Math.hypot(vel.x, vel.y) / 3,
+            '#00aa00'
+        );
+        
+        const kjForce = this.pStorage.at(-1).kjForce;
+        const dragForce = this.pStorage.at(-1).dragForce;
+        const kjDirection = Math.atan2(kjForce.y, kjForce.x);
+        const kjMag = Math.hypot(kjForce.x, kjForce.y);
+        const dragDirection = Math.atan2(dragForce.y, dragForce.x);
+        const dragMag = Math.hypot(dragForce.x, dragForce.y);
+        if (optionValues['showKJForce'] && kjMag !== 0) drawArrow(context,
+            pos.x + this.dozerLeft, pos.y,
+            kjDirection,
+            kjMag,
+            '#00ffff'
+        );
+        if (optionValues['showDragForce'] && dragMag !== 0) drawArrow(context,
+            pos.x + this.dozerLeft, pos.y,
+            dragDirection,
+            dragMag,
+            '#ff5500'   
+        );
+    }
 
     drawStep(resolve) {
         if ((this.position.y < 0) || (!this.above && (this.position.x + (hubLeft-this.delta) > hopperLeft))) {
@@ -312,6 +350,10 @@ class SimulationData {
             Math.abs(fromLeftHopper - hopperWidth/2) / (hopperWidth) * 100,
         '%');
     };
+
+    getGif() {
+
+    }
 }
 
 function checkInstance(stats, msPer, simId) {
@@ -401,7 +443,7 @@ const drawBall = (stats, x, y) => {
     ctx.fill();
 }
 
-const drawArrow = (x, y, angle, length, color) => {
+const drawArrow = (context, x, y, angle, length, color) => {
     const tipX = x + length * Math.cos(angle);
     const tipY = y + length * Math.sin(angle);
 
@@ -432,10 +474,10 @@ const draw = (stats) => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const hubDrawW = (hubWidth + 7.5) * WORLD_SCALE;
-    const hubDrawH = (hopperHeight + 48) * WORLD_SCALE;
-
-    ctx.drawImage(images.hub, canvas.width - hubDrawW, canvas.height - hubDrawH);
+    ctx.save();
+    ctx.transform(WORLD_SCALE, 0, 0, WORLD_SCALE, 0, 0);
+    ctx.drawImage(images.hub, w-hubWidth, h-hopperHeight, hubWidth, hopperHeight);
+    ctx.restore();
     
     
     
@@ -461,14 +503,12 @@ const draw = (stats) => {
     }
     ctx.stroke();
 
-    drawArrow(
+    drawArrow(ctx,
         dozerLeft + dozerSize/2, sH,
         stats.theta,
         velocityLength,
         '#00ffff'
     );
-
-    const vectorSclFactor = 0.33;
 
     sims.forEach(sim => {
         if (!sim) return;
@@ -476,34 +516,7 @@ const draw = (stats) => {
         drawBall(sim.stats, sim.position.x + sim.dozerLeft, sim.position.y);
 
         if (!sim.running) return;
-
-        const pos = sim.position;
-        const vel = sim.velocity;
-        if (optionValues['showVelocity'] && Math.hypot(vel.x, vel.y) > 0) drawArrow(
-            pos.x + sim.dozerLeft, pos.y,
-            Math.atan2(vel.y, vel.x),
-            Math.hypot(vel.x, vel.y) * vectorSclFactor,
-            '#00aa00'
-        );
-        
-        const kjForce = sim.pStorage.at(-1).kjForce;
-        const dragForce = sim.pStorage.at(-1).dragForce;
-        const kjDirection = Math.atan2(kjForce.y, kjForce.x);
-        const kjMag = Math.hypot(kjForce.x, kjForce.y);
-        const dragDirection = Math.atan2(dragForce.y, dragForce.x);
-        const dragMag = Math.hypot(dragForce.x, dragForce.y);
-        if (optionValues['showKJForce'] && kjMag !== 0) drawArrow(
-            pos.x + sim.dozerLeft, pos.y,
-            kjDirection,
-            kjMag * vectorSclFactor * 3,
-            '#00ffff'
-        );
-        if (optionValues['showDragForce'] && dragMag !== 0) drawArrow(
-            pos.x + sim.dozerLeft, pos.y,
-            dragDirection,
-            dragMag * vectorSclFactor * 3,
-            '#ff5500'   
-        );
+        sim.drawVectors(ctx);
     });
 
     ctx.restore();
