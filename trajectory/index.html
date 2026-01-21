@@ -34,26 +34,31 @@
                 <label for="delta">Distance from HUB (ft)</label>
                 <input type="range" name="delta" id="delta" min="1" max="12">
                 <p>1</p> <p>12</p>
+                <input type="number" name="delta" id="delta-number" class="param-set" min="1" max="12">
             </div>
             <div class="parameter-div">
                 <label for="v0">Velocity of Launch (ft/s)</label>
                 <input type="range" name="v0" id="v0" min="15" max="30">
                 <p>15</p> <p>30</p>
+                <input type="number" name="v0" id="v0-number" class="param-set" min="15" max="30">
             </div>
             <div class="parameter-div">
                 <label for="theta">Angle of Launch (º)</label>
                 <input type="range" name="theta" id="theta" min="0" max="90">
                 <p>0</p> <p>90</p>
+                <input type="number" name="theta" id="theta-number" class="param-set" min="0" max="90">
             </div>
             <div class="parameter-div">
                 <label for="h">Height of Launcher (in)</label>
                 <input type="range" name="h" id="h" min="5" max="50">
                 <p>5</p> <p>50</p>
+                <input type="number" name="h" id="h-number" class="param-set" min="5" max="50">
             </div>
             <div class="parameter-div">
                 <label for="spin">Velocity of Spin (1000rpm)</label>
                 <input type="range" name="spin" id="spin" min="-5" max="5">
                 <p>-5</p> <p>5</p>
+                <input type="number" name="spin" id="spin-number" class="param-set" min="-5" max="5">
             </div>
 
             <div id="runbtncarrier">
@@ -62,11 +67,11 @@
                 <button class="runbtn">Run Sim. 3</button>
             </div>
 
-            <p style="margin-bottom: 0.5rem;"><i>Hold Shift and Ctrl for more precision on sliders.</i></p>
-            <p style="margin-top: 0;"><i>Positive spin indicates topspin, and negative backspin.</i></p>
+            <p style="font-size: smaller; margin-bottom: 0.25em;"><i>Hold Shift and Ctrl for more precision on sliders.</i></p>
+            <p style="font-size: smaller; margin: 0;"><i>Positive spin indicates topspin, and negative backspin.</i></p>
         </div>
 
-        <div>
+        <div id="canvasholder">
             <canvas></canvas>
 
             <div id="displayoptionholder">
@@ -88,11 +93,11 @@
                     
                     <div class="optionset">
                         <div>
-                            <label for="displayPrecision">Display Precision <small>(digits of display)</small></label>
+                            <label for="displayPrecision">Display Precision <small>(digits)</small></label>
                             <input type="number" name="displayPrecision" id="displayPrecision" min="0" max="8">
                         </div>
                         <div>
-                            <label for="calculationPrecision">Calculation Precision <small>(step size)</small></label>
+                            <label for="calculationPrecision">Simulation Precision <small>(step size)</small></label>
                             <input type="number" name="calculationPrecision" id="calculationPrecision" min="2" max="12">
                         </div>
                         <div>
@@ -103,8 +108,8 @@
                 </div>
 
                 <div>
-                    <p style="font-size: 85%; margin: 0; margin-top: 0.5em;"><i>Velocity is shrunk for visibility;</i></p>
-                    <p style="font-size: 85%; margin: 0;"><i>It is scaled down by a relative factor of 3.</i></p>
+                    <p style="font-size: smaller; margin: 0; margin-top: 0.5em;"><i>Velocity is shrunk for visibility;</i></p>
+                    <p style="font-size: smaller; margin: 0;"><i>It is scaled down by a relative factor of 3.</i></p>
                 </div>
             </div>
 

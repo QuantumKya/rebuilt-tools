@@ -50,13 +50,42 @@ valInputs.forEach(inp => {
 
     const label = inp.parentElement.querySelector('label');
     label.textContent += `: ${inp.value}`;
+    const setter = inp.parentElement.querySelector('.param-set');
     
     inp.oninput = e => {
         const which = e.target.id;
         const tsInput = inputStats[which];
-        let val = Number(e.target.value);
+        let val = Math.max(Math.min(Number(e.target.value), e.target.max), e.target.min);
 
         e.target.value = val;
+        setter.value = val;
+        label.textContent = label.textContent.split(': ')[0] + `: ${val}`;
+
+        inputState[which] = val * tsInput.conversionFactor;
+        draw(inputState);
+    };
+});
+
+const setInputs = [...document.querySelectorAll('.parameter-div')].map(div => div.querySelector('.param-set'));
+setInputs.forEach(inp => {
+    const id = inp.id.match(/\w+(?=-number)/g)[0];
+    const thisInput = inputStats[id];
+
+    inp.step = 'any';
+
+    inp.value = thisInput.defaultVal;
+    inputState[id] = Number(inp.value) * thisInput.conversionFactor;
+
+    const label = inp.parentElement.querySelector('label');
+    const slider = inp.parentElement.querySelector('input');
+
+    inp.onchange = e => {
+        const which = e.target.id.match(/\w+(?=-number)/g)[0];
+        const tsInput = inputStats[which];
+        let val = Math.max(Math.min(Number(e.target.value), e.target.max), e.target.min);
+
+        e.target.value = val;
+        slider.value = val;
         label.textContent = label.textContent.split(': ')[0] + `: ${val}`;
 
         inputState[which] = val * tsInput.conversionFactor;
