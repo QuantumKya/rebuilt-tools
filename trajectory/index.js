@@ -62,7 +62,7 @@ valInputs.forEach(inp => {
         label.textContent = label.textContent.split(': ')[0] + `: ${val}`;
 
         inputState[which] = val * tsInput.conversionFactor;
-        draw(inputState);
+        draw(inputState, ctx);
     };
 });
 
@@ -89,7 +89,7 @@ setInputs.forEach(inp => {
         label.textContent = label.textContent.split(': ')[0] + `: ${val}`;
 
         inputState[which] = val * tsInput.conversionFactor;
-        draw(inputState);
+        draw(inputState, ctx);
     };
 });
 
@@ -126,12 +126,15 @@ window.addEventListener('keyup', e => { if (e.key === 'Shift') changeSteps(1); e
 document.addEventListener('mouseup', e => changeSteps(1));
 
 simColors = ['#ff0000', '#00ff00', '#0000ff'];
-document.querySelectorAll('button').forEach((btn, i) => btn.onclick = async () => {
+const simbuttondivs = document.querySelector('#runbtncarrier').querySelectorAll('div');
+simbuttondivs.forEach((div, i) => div.querySelector('button').onclick = async () => {
     const searchee = unknown();
     console.log(optionValues.stepTime);
     if (searchee === '') checkInstance(inputState, optionValues.stepTime, i);
     else await findRange(searchee, i);
 });
+
+simbuttondivs.forEach((div, i) => div.querySelectorAll('button').item(1).onclick = async () => sims[i].getGif(i));
 
 /*================================= Constants =================================*/
 
@@ -199,9 +202,6 @@ class SimulationData {
         this.success = false;
 
         this.dozerLeft = hubLeft - this.delta;
-
-        this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext('2d');
     }
 
     set drawingSpeed(msPer) {
@@ -220,11 +220,6 @@ class SimulationData {
         this.pStorage = [{ t: 0, position: { x: 0, y: this.h }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } }];
 
         this.running = true;
-
-        this.canvas.width = canvas.width;
-        this.canvas.height = canvas.height;
-        this.ctx.imageSmoothingEnabled = false;
-        this.ctx.lineWidth = 2;
     }
 
     integrateStep() {
@@ -259,7 +254,7 @@ class SimulationData {
         this.pStorage.push({ t: this.t, position: { x: this.position.x, y: this.position.y }, kjForce: kjVector, dragForce: dragVector });
     }
 
-    drawParabola() {
+    drawParabola(ctx, steps = this.pStorage.length) {
         // MOVE AND SCALE
         ctx.save();
         ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, (hubLeft - this.delta)*WORLD_SCALE, canvas.height);
@@ -269,7 +264,7 @@ class SimulationData {
         ctx.strokeStyle = this.color;
         ctx.beginPath();
         ctx.moveTo(firstPos.x, firstPos.y);
-        for (let i = 1; i < this.pStorage.length; i++) {
+        for (let i = 1; i < steps; i++) {
             const curr = this.pStorage[i].position;
             ctx.lineTo(curr.x, curr.y);
         }
@@ -277,10 +272,10 @@ class SimulationData {
         ctx.restore();
     }
     
-    drawVectors(context) {
+    drawVectors(ctx) {
         const pos = this.position;
         const vel = this.velocity;
-        if (optionValues['showVelocity'] && Math.hypot(vel.x, vel.y) > 0) drawArrow(context,
+        if (optionValues['showVelocity'] && Math.hypot(vel.x, vel.y) > 0) drawArrow(ctx,
             pos.x + this.dozerLeft, pos.y,
             Math.atan2(vel.y, vel.x),
             Math.hypot(vel.x, vel.y) / 3,
@@ -293,13 +288,13 @@ class SimulationData {
         const kjMag = Math.hypot(kjForce.x, kjForce.y);
         const dragDirection = Math.atan2(dragForce.y, dragForce.x);
         const dragMag = Math.hypot(dragForce.x, dragForce.y);
-        if (optionValues['showKJForce'] && kjMag !== 0) drawArrow(context,
+        if (optionValues['showKJForce'] && kjMag !== 0) drawArrow(ctx,
             pos.x + this.dozerLeft, pos.y,
             kjDirection,
             kjMag,
             '#00ffff'
         );
-        if (optionValues['showDragForce'] && dragMag !== 0) drawArrow(context,
+        if (optionValues['showDragForce'] && dragMag !== 0) drawArrow(ctx,
             pos.x + this.dozerLeft, pos.y,
             dragDirection,
             dragMag,
@@ -321,7 +316,7 @@ class SimulationData {
         }
         if (!this.above && this.position.y > 72) this.above = true;
 
-        if (this._msPer >= 0) draw(this.stats, this.position, this.velocity, this.acceleration);
+        if (this._msPer >= 0) draw(this.stats, ctx);
         
         this.integrateStep();
 
@@ -333,7 +328,7 @@ class SimulationData {
         if (this._msPer >= 0) this.printResults();
         this.running = false;
 
-        draw(this.stats, this.position, this.velocity, this.acceleration);
+        draw(this.stats, ctx);
         resolve(this.success);
     }
 
@@ -367,12 +362,12 @@ class SimulationData {
         addTextLine('Ball Made It?', this.success);
 
         const timetaken = this.t;
-        addTextLine(`Travel Time`, timetaken);
+        addTextLine(`Travel Time`, timetaken, ' <small>sec.</small>');
         const distanceX = this.position.x;
         const distanceY = this.position.y;
-        addTextLine('Distance Traveled (X)', distanceX);
-        addTextLine('Distance Traveled (Y)', distanceY);
-        addTextLine('Maximum Height', Math.max(...this.pStorage.map(a=>a.position.y)));
+        addTextLine('Distance Traveled (X)', distanceX, ' <small>in.</small>');
+        addTextLine('Distance Traveled (Y)', distanceY, ' <small>in.</small>');
+        addTextLine('Maximum Height', Math.max(...this.pStorage.map(a=>a.position.y)), ' <small>in.</small>');
 
         const fromLeftHopper = this.position.x - this.delta - (hubWidth-hopperWidth)/2;
         if (this.success) addTextLine('Prob. of Bounceback (maybe)',
@@ -380,8 +375,32 @@ class SimulationData {
         '%');
     };
 
-    getGif() {
+    async getGif(simId) {
+        const gifcanvas = document.createElement('canvas');
+        const gifctx = gifcanvas.getContext('2d');
 
+        gifcanvas.width = canvas.width;
+        gifcanvas.height = canvas.height;
+        gifctx.imageSmoothingEnabled = false;
+        gifctx.lineWidth = 1;
+
+        const gif = new GIF({
+            repeat: 0,
+            quality: 5,
+            width: gifcanvas.width,
+            height: gifcanvas.height,
+        });
+
+        const addGifFrame = async (step) => {
+            draw(this.stats, gifctx, simId, step);
+            gif.addFrame(gifctx, { delay: this._msPer + ((step === (this.pStorage.length-1)) ? 300 : 0), copy: true });
+        };
+        for (let i = 0; i < this.pStorage.length; i++) await addGifFrame(i);
+
+        gif.on('finished', (blob) => {
+            window.open(URL.createObjectURL(blob));
+        });
+        gif.render();
     }
 }
 
@@ -464,7 +483,7 @@ async function findRange(unknown, simId) {
 
 /*================================= Drawing =================================*/
 
-const drawBall = (stats, x, y) => {
+const drawBall = (ctx, x, y) => {
     // REPLACE WITH IMAGE DRAWING LATER
     ctx.fillStyle = '#f4f42d';
     ctx.beginPath();
@@ -472,7 +491,7 @@ const drawBall = (stats, x, y) => {
     ctx.fill();
 }
 
-const drawArrow = (context, x, y, angle, length, color) => {
+const drawArrow = (ctx, x, y, angle, length, color) => {
     const tipX = x + length * Math.cos(angle);
     const tipY = y + length * Math.sin(angle);
 
@@ -497,9 +516,7 @@ const drawArrow = (context, x, y, angle, length, color) => {
     ctx.stroke();
 }
 
-const draw = (stats) => {
-    ctx.save();
-
+const drawBackground = (ctx, stats) => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -507,12 +524,25 @@ const draw = (stats) => {
     ctx.transform(WORLD_SCALE, 0, 0, WORLD_SCALE, 0, 0);
     ctx.drawImage(images.hub, w-hubWidth, h-hopperHeight, hubWidth, hopperHeight);
     ctx.restore();
-    
-    
+
+
+
+    // Draw the hub and hopper =========================================================
+    const dozerLeft = hubLeft - stats.delta - dozerSize/2;
+
+    // Draw the dozer image upright in pixel coordinates (avoid transform flip)
+    const px = dozerLeft * WORLD_SCALE;
+    const psize = dozerSize * WORLD_SCALE;
+    const pyTop = canvas.height - (stats.h * WORLD_SCALE); // top-left y for image so bottom sits at sH
+    ctx.drawImage(images.dozer, px, pyTop, psize*2, psize);
+}
+
+const draw = (stats, ctx, simId = -1, step = -1) => {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    drawBackground(ctx, stats);
     
     // MOVE AND SCALE
     ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
-    const sH = stats.h;
 
     // Draw the hub and hopper =========================================================
     const dozerLeft = hubLeft - stats.delta - dozerSize/2;
@@ -524,37 +554,37 @@ const draw = (stats) => {
 
     ctx.strokeStyle = '#ffffff99';
     ctx.beginPath();
-    ctx.moveTo(dozerLeft + dozerSize/2, sH);
+    ctx.moveTo(dozerLeft + dozerSize/2, stats.h);
     for (let i = 0; i < velocityLength*Math.cos(stats.theta)/2; i++) {
         const x = dozerLeft + dozerSize/2 + i*2;
-        const y = sH;
+        const y = stats.h;
         i % 2 === 0 ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     }
     ctx.stroke();
 
     drawArrow(ctx,
-        dozerLeft + dozerSize/2, sH,
+        dozerLeft + dozerSize/2, stats.h,
         stats.theta,
         velocityLength,
         '#00ffff'
     );
 
-    sims.forEach(sim => {
+    sims.forEach((sim, i) => {
+        if (simId !== -1) if (i !== simId) return;
+
         if (!sim) return;
-        sim.drawParabola();
-        drawBall(sim.stats, sim.position.x + sim.dozerLeft, sim.position.y);
+        const st = step === -1 ? sim.pStorage.length-1 : step;
+
+        sim.drawParabola(ctx, st+1);
+        const recentPos = sim.pStorage[st].position;
+        console.log('ballPos: ', recentPos);
+        drawBall(ctx, recentPos.x + sim.dozerLeft, recentPos.y);
 
         if (!sim.running) return;
         sim.drawVectors(ctx);
     });
 
     ctx.restore();
-
-    // Draw the dozer image upright in pixel coordinates (avoid transform flip)
-    const px = dozerLeft * WORLD_SCALE;
-    const psize = dozerSize * WORLD_SCALE;
-    const pyTop = canvas.height - (sH * WORLD_SCALE); // top-left y for image so bottom sits at sH
-    ctx.drawImage(images.dozer, px, pyTop, psize*2, psize);
 }
 
 
@@ -567,4 +597,4 @@ Promise.all(
         img.onload = res;
         img.onerror = rej;
     }))
-).then(() => draw(inputState));
+).then(() => draw(inputState, ctx));
