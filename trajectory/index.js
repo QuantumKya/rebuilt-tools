@@ -217,7 +217,7 @@ class SimulationData {
         this.acceleration = { x: 0, y: -g };
         this.dt = optionValues.calculationPrecision;
         
-        this.pStorage = [{ t: 0, position: { x: 0, y: this.h }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } }];
+        this.pStorage = [{ t: 0, position: { x: 0, y: this.h }, velocity: { x: vx, y: vy }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } }];
 
         this.running = true;
     }
@@ -251,7 +251,7 @@ class SimulationData {
 
         console.log(`Position: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)}) Velocity: (${this.velocity.x.toFixed(2)}, ${this.velocity.y.toFixed(2)})`);
 
-        this.pStorage.push({ t: this.t, position: { x: this.position.x, y: this.position.y }, kjForce: kjVector, dragForce: dragVector });
+        this.pStorage.push({ t: this.t, position: { x: this.position.x, y: this.position.y }, velocity: { x: this.velocity.x, y: this.velocity.y }, kjForce: kjVector, dragForce: dragVector });
     }
 
     drawParabola(ctx, steps = this.pStorage.length) {
@@ -272,9 +272,9 @@ class SimulationData {
         ctx.restore();
     }
     
-    drawVectors(ctx) {
-        const pos = this.position;
-        const vel = this.velocity;
+    drawVectors(ctx, step = (this.pStorage.length-1)) {
+        const pos = this.pStorage[step].position;
+        const vel = this.pStorage[step].velocity;
         if (optionValues['showVelocity'] && Math.hypot(vel.x, vel.y) > 0) drawArrow(ctx,
             pos.x + this.dozerLeft, pos.y,
             Math.atan2(vel.y, vel.x),
@@ -282,8 +282,8 @@ class SimulationData {
             '#00aa00'
         );
         
-        const kjForce = this.pStorage.at(-1).kjForce;
-        const dragForce = this.pStorage.at(-1).dragForce;
+        const kjForce = this.pStorage.at(step).kjForce;
+        const dragForce = this.pStorage.at(step).dragForce;
         const kjDirection = Math.atan2(kjForce.y, kjForce.x);
         const kjMag = Math.hypot(kjForce.x, kjForce.y);
         const dragDirection = Math.atan2(dragForce.y, dragForce.x);
@@ -580,8 +580,8 @@ const draw = (stats, ctx, simId = -1, step = -1) => {
         console.log('ballPos: ', recentPos);
         drawBall(ctx, recentPos.x + sim.dozerLeft, recentPos.y);
 
-        if (!sim.running) return;
-        sim.drawVectors(ctx);
+        if (!sim.running && simId === -1) return;
+        sim.drawVectors(ctx, st);
     });
 
     ctx.restore();
