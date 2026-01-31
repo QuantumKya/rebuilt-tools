@@ -1,9 +1,12 @@
 select { font-family: 'Google Sans Code'; margin-bottom: 2rem; }
 option { font-size: medium; }
 
+body {
+    overflow-x: hidden;
+}
+
 canvas {
-    width: 800px;
-    height: 600px;
+    height: 85vh;
 }
 
 #flex-container {
@@ -16,7 +19,6 @@ canvas {
     flex-direction: column;
     padding: 1.5rem;
     padding-top: 0;
-    max-width: 21.5rem;
 }
 
 #input-container div {
@@ -40,6 +42,14 @@ canvas {
 }
 #input-container .hidden-input {
     display: none;
+}
+#input-container > div > .param-option {
+    position: absolute;
+    width: min-content;
+    bottom: -0.35rem;
+
+    display: flex;
+    flex-direction: row;
 }
 
 .parameter-div {
@@ -87,22 +97,6 @@ div#runbtncarrier > button {
     align-self: flex-end;
 }
 
-#resultspanel {
-    background-color: #111111;
-    color: white;
-
-    margin: 1rem;
-    margin-top: 0;
-    padding: 0.75rem;
-    flex-grow: 1;
-}
-.resulttext {
-    font-size: 85%;
-    font-style: italic;
-    width: 100%;
-    height: calc((75)/3 * 1%);
-}
-
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -111,4 +105,61 @@ input::-webkit-inner-spin-button {
 input[type=number] {
     appearance: textfield; /* Firefox */
     width: 3rem;
+}
+
+
+
+
+#resultspanel {
+    background-color: #111111;
+    color: white;
+    border: dashed white 3px;
+
+    max-width: 35rem;
+
+    margin: 1rem;
+    margin-top: 0;
+    padding: 0.75rem;
+}
+#resultspanel > h3 {
+    margin-bottom: 0;
+}
+.resulttext {
+    font-size: 80%;
+    font-style: italic;
+    width: 100%;
+    height: 13.5em;
+
+    display: flex;
+    flex-direction: row;
+}
+.resulttext > div:first-child {
+    width: max-content;
+    margin-right: 1.5rem;
+}
+
+
+button {
+    border: none;
+    background-color: black;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 10px;
+}
+
+.panel {
+    position: absolute;
+    right: -35rem;
+    top: 2.5rem;
+
+    height: 100vh;
+    z-index: 1;
+    background-color: #f1f1f1;
+    overflow-x: hidden;
+    transition: 0.5s; /* Smooth transition effect */
+    padding-top: 60px; /* Space from the top */
+}
+
+.panel.open {
+    right: 0; /* Visible width */
 }

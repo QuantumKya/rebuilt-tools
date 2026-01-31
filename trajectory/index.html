@@ -22,6 +22,7 @@
         <div id="input-container">
             <h1>Fuel Trajectory</h1>
             
+            <!--
             <select name="unknown" id="unknown">
                 <option value="">Select One...</option>
                 <option value="delta">Distance from HUB</option>
@@ -30,18 +31,32 @@
                 <option value="h">Launcher Height</option>
                 <option value="spin">Spin Velocity</option>
             </select>
+            -->
 
             <div class="parameter-div">
                 <label for="delta">Distance from HUB (ft)</label>
-                <input type="range" name="delta" id="delta" min="1" max="12">
-                <p>1</p> <p>12</p>
-                <input type="number" name="delta" id="delta-number" class="param-set" min="1" max="12">
+                <input type="range" name="delta" id="delta" min="1" max="15">
+                <p>1</p> <p>15</p>
+                <input type="number" name="delta" id="delta-number" class="param-set" min="1" max="15" style="translate: 2.5em 0;">
+                <div class="param-option" style="left: 4em; translate: 0 0.2em;">
+                    <label for="disttype">From...&nbsp;</label>
+                    <select name="disttype" id="disttype">
+                        <option value="0">edge</option>
+                        <option value="1">center</option>
+                    </select>
+                </div>
             </div>
-            <div class="parameter-div">
+            <div class="parameter-div" id="vel">
                 <label for="v0">Velocity of Launch (ft/s)</label>
                 <input type="range" name="v0" id="v0" min="15" max="30">
                 <p>15</p> <p>30</p>
                 <input type="number" name="v0" id="v0-number" class="param-set" min="15" max="30">
+            </div>
+            <div class="parameter-div" id="flyrad" style="display: none;">
+                <label for="flyrad">Radius of Flywheel(s) (in)</label>
+                <input type="range" name="flyrad" id="flyrad" min="0" max="10">
+                <p>0</p> <p>10</p>
+                <input type="number" name="flyrad" id="flyrad-number" class="param-set" min="0" max="10">
             </div>
             <div class="parameter-div">
                 <label for="theta">Angle of Launch (º)</label>
@@ -125,24 +140,39 @@
 
         </div>
 
-        <div id="resultspanel">
+        <div style="margin-left: 2rem; width: max-content;">
+            <button onclick="openResultsPanel()" style="right: 1rem;">Open Results Panel</button>
 
-            <h2 style="margin-top: 0;">Results</h2>
-
-            <h3>Simulation 1</h3>
-            <div class="resulttext">
-                <p>Adjust parameters and run a simulation to see results here.</p>
+            <div class="param-option" style="left: 4em; translate: 0 0.2em; margin-top: 4rem;">
+                <label for="flytype">Mode...&nbsp;</label>
+                <select name="flytype" id="flytype">
+                    <option value="0">velocity</option>
+                    <option value="1">flywheel</option>
+                    <option value="2">dual flywheel</option>
+                </select>
             </div>
-            <h3>Simulation 2</h3>
-            <div class="resulttext">
-                <p>Adjust parameters and run a simulation to see results here.</p>
+            
+            <div id="resultspanel" class="panel">
+    
+                <h3>Simulation 1</h3>
+                <div class="resulttext">
+                    <div class="res-conditions"><p>Adjust parameters and run a simulation to see results here.</p></div>
+                    <div class="res-answers"></div>
+                </div>
+                <h3>Simulation 2</h3>
+                <div class="resulttext">
+                    <div class="res-conditions"><p>Adjust parameters and run a simulation to see results here.</p></div>
+                    <div class="res-answers"></div>
+                </div>
+                <h3>Simulation 3</h3>
+                <div class="resulttext">
+                    <div class="res-conditions"><p>Adjust parameters and run a simulation to see results here.</p></div>
+                    <div class="res-answers"></div>
+                </div>
+    
             </div>
-            <h3>Simulation 3</h3>
-            <div class="resulttext">
-                <p>Adjust parameters and run a simulation to see results here.</p>
-            </div>
-
         </div>
+
     </div>
 
 </body>

@@ -3,10 +3,12 @@ const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 ctx.lineWidth = 2;
 
-const w = 200;
 const h = 150;
-canvas.width = w*4;
-canvas.height = h*4;
+const w = 200;
+const WORLD_SCALE = 10; // fill the screen
+
+canvas.width = w*WORLD_SCALE;
+canvas.height = h*WORLD_SCALE;
 
 let assetsLoaded = 0;
 let SHIFTING = false;
@@ -16,6 +18,7 @@ let ALTING = false;
 const inputState = {
     delta: NaN,
     v0: NaN,
+    flyrad: NaN,
     theta: NaN,
     h: NaN,
     spin: NaN,
@@ -35,6 +38,7 @@ const optionValues = {
 const inputStats = {
     delta: { unit: 'ft', conversionFactor: 12, defaultVal: 4 },
     v0: { unit: 'ft/s', conversionFactor: 12, defaultVal: 20 },
+    flyrad: { unit: 'in', conversionFactor: 1, defaultVal: 2 },
     theta: { unit: '°', conversionFactor: Math.PI / 180, defaultVal: 45 },
     h: { unit: 'in', conversionFactor: 1, defaultVal: 20 },
     spin: { unit: 'rpm', conversionFactor: 1000 * 2*Math.PI/60, defaultVal: 0 },
@@ -106,16 +110,16 @@ optInputs.forEach(inp => {
     };
 });
 
-const selector = document.querySelector('select');
-selector.value = '';
-selector.onchange = e => {
-    const selected = e.target.value;
+// const selector = document.querySelector('select');
+// selector.value = '';
+// selector.onchange = e => {
+//     const selected = e.target.value;
 
-    document.querySelectorAll('.parameter-div').forEach(
-        div => div.classList.toggle('hidden-input', (selected === div.querySelector('input').id) && selected)
-    );
-}
-const unknown = () => selector.value;
+//     document.querySelectorAll('.parameter-div').forEach(
+//         div => div.classList.toggle('hidden-input', (selected === div.querySelector('input').id) && selected)
+//     );
+// }
+// const unknown = () => selector.value;
 
 const changeSteps = (step) => {
     valInputs.forEach(inp => inp.step = step);
@@ -128,13 +132,30 @@ document.addEventListener('mouseup', e => changeSteps(1));
 simColors = ['#ff0000', '#00ff00', '#0000ff'];
 const simbuttondivs = document.querySelector('#runbtncarrier').querySelectorAll('div');
 simbuttondivs.forEach((div, i) => div.querySelector('button').onclick = async () => {
-    const searchee = unknown();
-    console.log(optionValues.stepTime);
-    if (searchee === '') checkInstance(inputState, optionValues.stepTime, i);
-    else await findRange(searchee, i);
+    checkInstance(inputState, optionValues.stepTime, i);
+    // const searchee = unknown();
+    // console.log(optionValues.stepTime);
+    // if (searchee === '') checkInstance(inputState, optionValues.stepTime, i);
+    // else await findRange(searchee, i);
 });
 
 simbuttondivs.forEach((div, i) => div.querySelectorAll('button').item(1).onclick = async () => sims[i].getGif(i));
+
+/*================================= Input Types =================================*/
+
+const disttype = document.getElementById('disttype');
+const flytype = document.getElementById('flytype');
+flytype.onchange = e => {
+    const val = Number(e.target.value);
+    if (val) {
+        document.getElementById('vel').style.display = 'none';
+        document.getElementById('flyrad').style.display = 'flex';
+    }
+    else {
+        document.getElementById('flyrad').style.display = 'none';
+        document.getElementById('vel').style.display = 'flex';
+    }
+}
 
 /*================================= Constants =================================*/
 
@@ -161,7 +182,10 @@ const hopperLeft = hubMid - hopperWidth/2;
 const hopperMid = hubMid;
 const hopperTop = hopperHeight;
 
-const WORLD_SCALE = 4; // 1 inch = 4 pixels
+disttype.value = '0';
+const anchorPoint = () => (Number(disttype.value)) ? hubMid : hubLeft;
+
+flytype.value = '0';
 
 
 const fuelMass = 0.474; // 0.448-0.500 lbs
@@ -179,13 +203,14 @@ const mult = (vec, scalar) => ({ x: vec.x * scalar, y: vec.y * scalar });
 const sims = simColors.map(a=>null);
 const simGifs = simColors.map(a=>[]);
 class SimulationData {
-    constructor(delta, h, theta, v0, spin, color) {
-        this.delta = delta;
-        this.h = h;
-        this.theta = theta;
-        this.v0 = v0;
-        this.spin = spin;
-        this.stats = { delta: this.delta, h: this.h, theta: this.theta, v0: this.v0, spin: this.spin };
+    constructor(daStats, color) {
+        this.delta = daStats.delta;
+        this.h = daStats.h;
+        this.theta = daStats.theta;
+        this.v0 = daStats.v0;
+        this.spin = daStats.spin;
+        this.flyrad = daStats.flyrad;
+        this.stats = { delta: this.delta, h: this.h, theta: this.theta, v0: this.v0, spin: this.spin, flyrad: this.flyrad };
         
         this.acceleration = { x: 0, y: 0 };
         this.velocity = { x: 0, y: 0 };
@@ -197,11 +222,11 @@ class SimulationData {
         this._msPer = -1;
 
         this.color = color;
-        this.above = h > hopperHeight;
+        this.above = this.h > hopperHeight;
         this.running = false;
         this.success = false;
 
-        this.dozerLeft = hubLeft - this.delta;
+        this.dozerLeft = anchorPoint() - this.delta;
     }
 
     set drawingSpeed(msPer) {
@@ -209,6 +234,20 @@ class SimulationData {
     }
 
     init() {
+        
+        // Case-wise velocity calculation
+        const fly = Number(flytype.value);
+        
+        if (fly > 0) {
+            const surfVel = Math.abs(this.spin) * this.flyrad;
+            this.v0 = surfVel * fly / 2;
+            this.stats.v0 = this.v0;
+            
+            this.spin *= fuelRadius / this.flyrad;
+            if (fly === 2) this.spin = 0;
+            this.stats.spin = this.spin;
+        }
+        
         const vx = this.v0 * Math.cos(this.theta);
         const vy = this.v0 * Math.sin(this.theta);
 
@@ -217,8 +256,7 @@ class SimulationData {
         this.acceleration = { x: 0, y: -g };
         this.dt = optionValues.calculationPrecision;
         
-        this.pStorage = [{ t: 0, position: { x: 0, y: this.h }, velocity: { x: vx, y: vy }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } }];
-
+        this.pStorage.push({ t: 0, position: { x: 0, y: this.h }, velocity: { x: vx, y: vy }, kjForce: { x: 0, y: 0 }, dragForce: { x: 0, y: 0 } });
         this.running = true;
     }
 
@@ -257,7 +295,7 @@ class SimulationData {
     drawParabola(ctx, steps = this.pStorage.length) {
         // MOVE AND SCALE
         ctx.save();
-        ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, (hubLeft - this.delta)*WORLD_SCALE, canvas.height);
+        ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, (anchorPoint() - this.delta)*WORLD_SCALE, canvas.height);
         
         const firstPos = this.pStorage[0].position;
 
@@ -303,7 +341,7 @@ class SimulationData {
     }
 
     drawStep(resolve) {
-        if ((this.position.y < 0) || (!this.above && (this.position.x + (hubLeft-this.delta) > hopperLeft))) {
+        if ((this.position.y < 0) || (!this.above && (this.position.x + this.dozerLeft > hopperLeft))) {
             this.success = false;
             this.endProcess(resolve);
             return;
@@ -347,32 +385,55 @@ class SimulationData {
         if (simId === -1) return;
         
         const resultDiv = document.querySelectorAll('.resulttext').item(simId);
-        resultDiv.replaceChildren();
+        const initialDiv = resultDiv.querySelector('div.res-conditions');
+        const endDiv = resultDiv.querySelector('div.res-answers')
+        initialDiv.replaceChildren();
+        endDiv.replaceChildren();
 
-        const addTextLine = (text, value = '', suffix = '') => {
+        const addTextLine = (block, text, value = '', suffix = '') => {
             const p = document.createElement('p');
             if (typeof value === "boolean") value = (value ? 'Yes' : 'No');
             else if (typeof value === "number") value = value.toFixed(optionValues.displayPrecision);
 
             if (value === '') p.innerHTML = text;
             else p.innerHTML = `${text}: <b>${value}${suffix}</b>`;
-            resultDiv.appendChild(p);
+            (block ? endDiv : initialDiv).appendChild(p);
         }
 
-        addTextLine('Ball Made It?', this.success);
+        // Initial Conditions Printing
+
+        const initialhead = document.createElement('h3');
+        initialhead.innerHTML = 'Initial Conditions';
+        initialDiv.appendChild(initialhead);
+
+        addTextLine(0, 'Distance', this.stats.delta/inputStats.delta.conversionFactor, ' <small>ft.</small>');
+        addTextLine(0, 'Height', this.stats.h/inputStats.h.conversionFactor, ' <small>ft.</small>');
+        addTextLine(0, 'Ball Velocity', this.stats.v0/inputStats.v0.conversionFactor, ' <small>ft./sec.</small>');
+        addTextLine(0, 'Angle', this.stats.theta/inputStats.theta.conversionFactor, 'º');
+        if (this.stats.spin !== 0) addTextLine(0, 'Spin', this.stats.spin/inputStats.spin.conversionFactor);
+
+        // Results Printing
+
+        const resulthead = document.createElement('h3');
+        resulthead.innerHTML = 'Results';
+        endDiv.appendChild(resulthead);
+
+        addTextLine(1, 'Ball Made It?', this.success);
 
         const timetaken = this.t;
-        addTextLine(`Travel Time`, timetaken, ' <small>sec.</small>');
+        addTextLine(1, `Travel Time`, timetaken, ' <small>sec.</small>');
         const distanceX = this.position.x;
         const distanceY = this.position.y;
-        addTextLine('Distance Traveled (X)', distanceX, ' <small>in.</small>');
-        addTextLine('Distance Traveled (Y)', distanceY, ' <small>in.</small>');
-        addTextLine('Maximum Height', Math.max(...this.pStorage.map(a=>a.position.y)), ' <small>in.</small>');
+        addTextLine(1, 'Distance Traveled (X)', distanceX, ' <small>in.</small>');
+        addTextLine(1, 'Distance Traveled (Y)', distanceY, ' <small>in.</small>');
+        addTextLine(1, 'Maximum Height', Math.max(...this.pStorage.map(a=>a.position.y)), ' <small>in.</small>');
 
+        /*
         const fromLeftHopper = this.position.x - this.delta - (hubWidth-hopperWidth)/2;
         if (this.success) addTextLine('Prob. of Bounceback (maybe)',
             Math.abs(fromLeftHopper - hopperWidth/2) / (hopperWidth) * 100,
         '%');
+        */
     };
 
     async getGif(simId) {
@@ -406,7 +467,7 @@ class SimulationData {
 
 function checkInstance(stats, msPer, simId) {
     return new Promise((resolve) => {
-        const simRunner = new SimulationData(stats.delta, stats.h, stats.theta, stats.v0, stats.spin, simColors[simId]);
+        const simRunner = new SimulationData(stats, simColors[simId]);
         simRunner.drawingSpeed = msPer;
         
         simRunner.init();
@@ -428,8 +489,7 @@ async function findRange(unknown, simId) {
     
     for (let prec = 0; prec < 40; prec++) {
         const interval = ([5, 1].at(prec % 2)) * Math.pow(10, -Math.floor(prec/2)+1);
-        const buffer = ([5, 1].at(prec % 2)) * Math.pow(10, -Math.floor(prec/2)+2);
-        console.log(`Interval: ${interval}, Buffer: ${buffer}`);
+        console.log(`Interval: ${interval}`);
         console.log(`Range: ${outMin} to ${outMax}`);
         
         // Stop if range is too small
@@ -451,8 +511,8 @@ async function findRange(unknown, simId) {
             for (let test = outMin; test <= outMax; test += interval) await checkFunc(test);
         }
         else {
-            for (let test = outMin - buffer; test <= outMin + buffer; test += interval) await checkFunc(test);
-            for (let test = outMax - buffer; test <= outMax + buffer; test += interval) await checkFunc(test);
+            for (let test = outMin - interval; test <= outMin + interval; test += interval) await checkFunc(test);
+            for (let test = outMax - interval; test <= outMax + interval; test += interval) await checkFunc(test);
         }
 
         if (successes.length === 0 || failures.length === 0) continue;
@@ -474,7 +534,6 @@ async function findRange(unknown, simId) {
 
         const improvement = Math.abs(oldMax - outMax) + Math.abs(oldMin - outMin);
         if (improvement < 0.15 && improvement) break;
-        
     }
 
     console.log(`Final range: ${outMin} to ${outMax}`);
@@ -528,7 +587,7 @@ const drawBackground = (ctx, stats) => {
 
 
     // Draw the hub and hopper =========================================================
-    const dozerLeft = hubLeft - stats.delta - dozerSize/2;
+    const dozerLeft = anchorPoint() - stats.delta - dozerSize/2;
 
     // Draw the dozer image upright in pixel coordinates (avoid transform flip)
     const px = dozerLeft * WORLD_SCALE;
@@ -545,7 +604,7 @@ const draw = (stats, ctx, simId = -1, step = -1) => {
     ctx.setTransform(WORLD_SCALE, 0, 0, -WORLD_SCALE, 0, canvas.height);
 
     // Draw the hub and hopper =========================================================
-    const dozerLeft = hubLeft - stats.delta - dozerSize/2;
+    const dozerLeft = anchorPoint() - stats.delta - dozerSize/2;
 
     // Draw the angle and the velocity vector =========================================================
 
@@ -553,6 +612,9 @@ const draw = (stats, ctx, simId = -1, step = -1) => {
     const velocityLength = stats.v0 * (5 / velInput.max);
 
     ctx.strokeStyle = '#ffffff99';
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
     ctx.beginPath();
     ctx.moveTo(dozerLeft + dozerSize/2, stats.h);
     for (let i = 0; i < velocityLength*Math.cos(stats.theta)/2; i++) {
@@ -586,6 +648,7 @@ const draw = (stats, ctx, simId = -1, step = -1) => {
 
     ctx.restore();
 }
+disttype.onchange = e => draw(inputStats, ctx);
 
 
 ctx.fillStyle = 'black';
@@ -598,3 +661,9 @@ Promise.all(
         img.onerror = rej;
     }))
 ).then(() => draw(inputState, ctx));
+
+
+
+function openResultsPanel() {
+    document.getElementById('resultspanel').classList.toggle('open');
+}
